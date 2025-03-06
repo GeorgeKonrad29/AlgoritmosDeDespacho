@@ -67,7 +67,6 @@ class GanttChart:
         self.text.insert(END, f"\nPromedio\t\t\t\t{avg_waiting_time:.2f}\t\t{avg_turnaround_time:.2f}\n")
 
 def ordenador(tasks):
-    tiempoTotalSistema = 0
     tiempoTotalSistema = sum([task['duration'] for task in tasks])
     newTasks = []
     sortedTasks = sorted(tasks, key=lambda x: x['arrival'])
@@ -91,21 +90,18 @@ def ordenador(tasks):
             sortedTasks.pop(0)
         if tiemposDeFinProceso >= tiempoTotalSistema:
             return newTasks
-    
-                
-            
-
     return newTasks
+
 def main():
     root = Tk()
 
     # Generate tasks
     tasks = [
-        {'name': 'Task 1', 'arrival': 0, 'duration': random.randint(4, 12)},
-        {'name': 'Task 2', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
-        {'name': 'Task 3', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
-        {'name': 'Task 4', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
-        {'name': 'Task 5', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
+        {'name': 'Task 1', 'arrival': 0, 'duration': random.randint(4, 12), 'priority': random.randint(1, 5)},
+        {'name': 'Task 2', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12), 'priority': random.randint(1, 5)},
+        {'name': 'Task 3', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12), 'priority': random.randint(1, 5)},
+        {'name': 'Task 4', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12), 'priority': random.randint(1, 5)},
+        {'name': 'Task 5', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12), 'priority': random.randint(1, 5)},
     ]
 
     # Assign random colors to tasks
@@ -154,6 +150,25 @@ def main():
     sjf_window.geometry("+1300+0")  # Position the window to the right of the main window
     sjf_chart = GanttChart(sjf_window, "SJF Gantt Chart")
     sjf_chart.draw_chart(sjf_tasks)
+
+    # Priority Algorithm
+    priority_tasks = sorted(tasks, key=lambda x: (x['arrival'], x['priority']))
+
+    # Add start and end attributes to tasks
+    for i, task in enumerate(priority_tasks):
+        if i > 0:
+            prev_end_time = priority_tasks[i-1]['end']
+            task['start'] = max(task['arrival'], prev_end_time)
+            task['end'] = task['start'] + task['duration']
+        else:
+            task['start'] = task['arrival']
+            task['end'] = task['start'] + task['duration']
+
+    # Create a new window for Priority Gantt Chart
+    priority_window = Toplevel(root)
+    priority_window.geometry("+1300+0")  # Position the window to the right of the SJF window
+    priority_chart = GanttChart(priority_window, "Priority Gantt Chart")
+    priority_chart.draw_chart(priority_tasks)
 
     root.mainloop()
 
