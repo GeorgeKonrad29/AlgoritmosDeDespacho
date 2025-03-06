@@ -42,12 +42,9 @@ class GanttChart:
             start_offset = start_time - min_start_time
             y_position = i * 50 + 50
 
-            # Generate a random color
-            color = "#{:06x}".format(random.randint(0, 0xFFFFFF))
-
             self.canvas.create_rectangle(
                 100 + start_offset * 20, y_position, 100 + (start_offset + duration) * 20, y_position + 30,
-                fill=color
+                fill=task['color']
             )
 
         # Calculate waiting times and turnaround times
@@ -69,6 +66,36 @@ class GanttChart:
             self.text.insert(END, f"{task['name']}\t{task['arrival']}\t{task['start']}\t{task['end']}\t{waiting_times[i]}\t\t{turnaround_times[i]}\n")
         self.text.insert(END, f"\nPromedio\t\t\t\t{avg_waiting_time:.2f}\t\t{avg_turnaround_time:.2f}\n")
 
+def ordenador(tasks):
+    tiempoTotalSistema = 0
+    tiempoTotalSistema = sum([task['duration'] for task in tasks])
+    newTasks = []
+    sortedTasks = sorted(tasks, key=lambda x: x['arrival'])
+    newTasks.append(sortedTasks[0])
+    sortedTasks.pop(0)
+    tiemposDeFinProceso = newTasks[0]['duration']
+    candidatos = []
+    for i in range(len(sortedTasks)):
+        for j in range(len(sortedTasks)):
+            if sortedTasks[j]['arrival'] <= tiemposDeFinProceso:
+                candidatos.append(sortedTasks[j])
+        if len(candidatos) > 0:
+            candidatos = sorted(candidatos, key=lambda x: x['duration'])
+            newTasks.append(candidatos[0])
+            tiemposDeFinProceso += candidatos[0]['duration']
+            sortedTasks.remove(candidatos[0])
+            candidatos = []
+        else:
+            newTasks.append(sortedTasks[0])
+            tiemposDeFinProceso += sortedTasks[0]['duration']
+            sortedTasks.pop(0)
+        if tiemposDeFinProceso >= tiempoTotalSistema:
+            return newTasks
+    
+                
+            
+
+    return newTasks
 def main():
     root = Tk()
 
@@ -80,6 +107,10 @@ def main():
         {'name': 'Task 4', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
         {'name': 'Task 5', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
     ]
+
+    # Assign random colors to tasks
+    for task in tasks:
+        task['color'] = "#{:06x}".format(random.randint(0, 0xFFFFFF))
 
     # First Come First Serve (FCFS) Algorithm
     fcfs_tasks = sorted(tasks, key=lambda x: x['arrival'])
@@ -98,9 +129,10 @@ def main():
     fcfs_chart.draw_chart(fcfs_tasks)
 
     # Shortest Job First (SJF) Algorithm
-    sjf_tasks = sorted(tasks, key=lambda x: (x['arrival'], x['duration']))
+    sjf_tasks = ordenador(tasks)
 
     # Add start and end attributes to tasks
+    current_time = 0
     for i, task in enumerate(sjf_tasks):
         if i > 0:
             prev_end_time = sjf_tasks[i-1]['end']
@@ -109,10 +141,17 @@ def main():
         else:
             task['start'] = task['arrival']
             task['end'] = task['start'] + task['duration']
+        current_time = task['end']
+
+        # Sort remaining tasks by duration, considering only those that have arrived
+        remaining_tasks = sjf_tasks[i+1:]
+        remaining_tasks = [t for t in remaining_tasks if t['arrival'] <= current_time]
+        remaining_tasks.sort(key=lambda x: x['duration'])
+        sjf_tasks[i+1:i+1+len(remaining_tasks)] = remaining_tasks
 
     # Create a new window for SJF Gantt Chart
     sjf_window = Toplevel(root)
-    sjf_window.geometry("+800+0")  # Position the window to the right of the main window
+    sjf_window.geometry("+1300+0")  # Position the window to the right of the main window
     sjf_chart = GanttChart(sjf_window, "SJF Gantt Chart")
     sjf_chart.draw_chart(sjf_tasks)
 
