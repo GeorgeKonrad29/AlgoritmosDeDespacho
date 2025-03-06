@@ -1,10 +1,10 @@
-from tkinter import Tk, Canvas, Text, Scrollbar, VERTICAL, RIGHT, Y, END
+from tkinter import Tk, Canvas, Text, Scrollbar, VERTICAL, RIGHT, Y, END, Toplevel
 import random
 
 class GanttChart:
-    def __init__(self, master):
+    def __init__(self, master, title):
         self.master = master
-        self.master.title("Gantt Chart")
+        self.master.title(title)
         self.canvas = Canvas(master, width=1200, height=500)  # Increased width for scalability
         self.canvas.pack()
 
@@ -25,7 +25,7 @@ class GanttChart:
         # Draw horizontal lines and labels
         for i, task in enumerate(tasks):
             y_position = i * 50 + 50
-            self.canvas.create_line(100, y_position, 2000, y_position, fill='black')  # Adjusted end position
+            self.canvas.create_line(100, y_position, 1100, y_position, fill='black')  # Adjusted end position
             self.canvas.create_text(50, y_position + 15, text=task['name'], anchor='e')
 
         # Draw vertical lines and labels
@@ -36,14 +36,6 @@ class GanttChart:
 
         # Draw tasks
         for i, task in enumerate(tasks):
-            if i > 0:
-                prev_end_time = tasks[i-1]['end']
-                task['start'] = max(task['arrival'], prev_end_time)
-                task['end'] = task['start'] + task['duration']
-            else:
-                task['start'] = task['arrival']
-                task['end'] = task['start'] + task['duration']
-
             start_time = task['start']
             end_time = task['end']
             duration = end_time - start_time
@@ -67,37 +59,63 @@ class GanttChart:
             waiting_times.append(waiting_time)
             turnaround_times.append(turnaround_time)
 
+        # Calculate average waiting time and turnaround time
+        avg_waiting_time = sum(waiting_times) / len(waiting_times)
+        avg_turnaround_time = sum(turnaround_times) / len(turnaround_times)
+
         # Print the tables in the Text widget
-        self.text.insert(END, "Task\tArrival\tStart\tEnd\tWaiting Time\tTurnaround Time\n")
+        self.text.insert(END, "Procesos\tLlegada\tInicio\tFin\tT.Espera\tT.Sistema\n")
         for i, task in enumerate(tasks):
             self.text.insert(END, f"{task['name']}\t{task['arrival']}\t{task['start']}\t{task['end']}\t{waiting_times[i]}\t\t{turnaround_times[i]}\n")
+        self.text.insert(END, f"\nPromedio\t\t\t\t{avg_waiting_time:.2f}\t\t{avg_turnaround_time:.2f}\n")
 
 def main():
     root = Tk()
-    chart = GanttChart(root)
 
+    # Generate tasks
     tasks = [
-        {'name': 'Task 1', 'arrival': 0, 'duration': random.randint(4, 15)},
-        {'name': 'Task 2', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 15)},
-        {'name': 'Task 3', 'arrival': random.randint(6, 10), 'duration': random.randint(4, 15)},
-        {'name': 'Task 4', 'arrival': random.randint(11, 15), 'duration': random.randint(4, 15)},
-        {'name': 'Task 5', 'arrival': random.randint(16, 20), 'duration': random.randint(4, 15)},
+        {'name': 'Task 1', 'arrival': 0, 'duration': random.randint(4, 12)},
+        {'name': 'Task 2', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
+        {'name': 'Task 3', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
+        {'name': 'Task 4', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
+        {'name': 'Task 5', 'arrival': random.randint(1, 5), 'duration': random.randint(4, 12)},
     ]
 
-    # Sort tasks by arrival time to ensure correct order
-    tasks.sort(key=lambda x: x['arrival'])
+    # First Come First Serve (FCFS) Algorithm
+    fcfs_tasks = sorted(tasks, key=lambda x: x['arrival'])
 
     # Add start and end attributes to tasks
-    for i, task in enumerate(tasks):
+    for i, task in enumerate(fcfs_tasks):
         if i > 0:
-            prev_end_time = tasks[i-1]['end']
+            prev_end_time = fcfs_tasks[i-1]['end']
             task['start'] = max(task['arrival'], prev_end_time)
             task['end'] = task['start'] + task['duration']
         else:
             task['start'] = task['arrival']
             task['end'] = task['start'] + task['duration']
 
-    chart.draw_chart(tasks)
+    fcfs_chart = GanttChart(root, "FCFS Gantt Chart")
+    fcfs_chart.draw_chart(fcfs_tasks)
+
+    # Shortest Job First (SJF) Algorithm
+    sjf_tasks = sorted(tasks, key=lambda x: (x['arrival'], x['duration']))
+
+    # Add start and end attributes to tasks
+    for i, task in enumerate(sjf_tasks):
+        if i > 0:
+            prev_end_time = sjf_tasks[i-1]['end']
+            task['start'] = max(task['arrival'], prev_end_time)
+            task['end'] = task['start'] + task['duration']
+        else:
+            task['start'] = task['arrival']
+            task['end'] = task['start'] + task['duration']
+
+    # Create a new window for SJF Gantt Chart
+    sjf_window = Toplevel(root)
+    sjf_window.geometry("+800+0")  # Position the window to the right of the main window
+    sjf_chart = GanttChart(sjf_window, "SJF Gantt Chart")
+    sjf_chart.draw_chart(sjf_tasks)
+
     root.mainloop()
 
 if __name__ == "__main__":
