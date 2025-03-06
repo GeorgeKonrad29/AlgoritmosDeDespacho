@@ -92,6 +92,32 @@ def ordenador(tasks):
             return newTasks
     return newTasks
 
+def ordenadorPrioridad(tasks):
+    tiempoTotalSistema = sum([task['duration'] for task in tasks])
+    newTasks = []
+    sortedTasks = sorted(tasks, key=lambda x: x['arrival'])
+    newTasks.append(sortedTasks[0])
+    sortedTasks.pop(0)
+    tiemposDeFinProceso = newTasks[0]['duration']
+    candidatos = []
+    for i in range(len(sortedTasks)):
+        for j in range(len(sortedTasks)):
+            if sortedTasks[j]['arrival'] <= tiemposDeFinProceso:
+                candidatos.append(sortedTasks[j])
+        if len(candidatos) > 0:
+            candidatos = sorted(candidatos, key=lambda x: x['priority'])
+            newTasks.append(candidatos[0])
+            tiemposDeFinProceso += candidatos[0]['duration']
+            sortedTasks.remove(candidatos[0])
+            candidatos = []
+        else:
+            newTasks.append(sortedTasks[0])
+            tiemposDeFinProceso += sortedTasks[0]['duration']
+            sortedTasks.pop(0)
+        if tiemposDeFinProceso >= tiempoTotalSistema:
+            return newTasks
+    return newTasks
+
 def main():
     root = Tk()
 
@@ -152,7 +178,7 @@ def main():
     sjf_chart.draw_chart(sjf_tasks)
 
     # Priority Algorithm
-    priority_tasks = sorted(tasks, key=lambda x: (x['arrival'], x['priority']))
+    priority_tasks = ordenadorPrioridad(tasks)
 
     # Add start and end attributes to tasks
     for i, task in enumerate(priority_tasks):
@@ -166,7 +192,7 @@ def main():
 
     # Create a new window for Priority Gantt Chart
     priority_window = Toplevel(root)
-    priority_window.geometry("+1300+0")  # Position the window to the right of the SJF window
+    priority_window.geometry("+1100+0")  # Position the window to the right of the SJF window
     priority_chart = GanttChart(priority_window, "Priority Gantt Chart")
     priority_chart.draw_chart(priority_tasks)
 
